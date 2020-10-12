@@ -10,7 +10,7 @@
 #        bme280-snmp {temperature|pressure|humidity}
 
 import os, os.path, pickle, sys
-from Adafruit_BME280 import *
+from bme280 import *
 
 NAME = os.path.basename(sys.argv[0])
 BME280_STATUS = '/var/run/bme280.status'
@@ -21,12 +21,10 @@ MAX_CACHE_SECONDS = 20
 #-------------------------------------------------------------------------
 # Get values from BME280 sensors (temperature, pressure, humidity).
 #-------------------------------------------------------------------------
-def readBME280All(sensor, samples):
+def readAllFromBME280(samples):
     t = p = h = 0
     for i in range(0, samples):
-        degrees = sensor.read_temperature()
-        hectopascals = (sensor.read_pressure() / 100.0)
-        humidity = sensor.read_humidity()
+        degrees,hectopascals,humidity = readBME280All(I2C_ADDRESS)
         #print 'Timestamp: {0:0.3f}'.format(sensor.t_fine)
         #print "Temperature (°C): {0:0.3f}".format(degrees)
         #print "Pressure (hPa): {0:0.2f}".format(hectopascals)
@@ -58,15 +56,14 @@ except Exception, e:
 if temperature == None or pressure == None or humidity == None:
     # Read from cache failed, get a real measurement.
     import ConfigParser
-    DEFAULTS = { 'I2C_ADDRESS': '0x77' }
+    DEFAULTS = { 'I2C_ADDRESS': '0x76' }
     config = ConfigParser.RawConfigParser(DEFAULTS)
     config.read(CFG_FILE)
     if not config.has_section('bme280'):
         config.add_section('bme280')
     I2C_ADDRESS = int(config.get('bme280', 'I2C_ADDRESS'), 0)
     try:
-        sensor = BME280(t_mode=BME280_OSAMPLE_16, p_mode=BME280_OSAMPLE_16, h_mode=BME280_OSAMPLE_16, address=I2C_ADDRESS)
-        temperature, pressure, humidity = readBME280All(sensor, READ_SAMPLES)
+        temperature, pressure, humidity = readAllFromBME280(READ_SAMPLES)
     except Exception, e:
         print "ERROR: %s: Cannot read values from sensor: %s" % (NAME, str(e))
         sys.exit(1)
